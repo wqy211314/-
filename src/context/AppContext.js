@@ -4,14 +4,30 @@ import { INITIAL_CUISINES, INITIAL_DISHES } from '../data/initialData';
 
 const AppContext = createContext(null);
 
-const STORAGE_KEY_CUISINES = '@laopo_kitchen_cuisines';
-const STORAGE_KEY_DISHES = '@laopo_kitchen_dishes';
+const STORAGE_KEY_CUISINES        = '@laopo_kitchen_cuisines';
+const STORAGE_KEY_DISHES          = '@laopo_kitchen_dishes';
+const STORAGE_KEY_HISTORY         = '@laopo_kitchen_order_history';
+const STORAGE_KEY_CURRENT_ORDERS  = '@laopo_kitchen_current_orders';
+const STORAGE_KEY_ORDER_DATE      = '@laopo_kitchen_order_date';
+
+function getTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getDateLabel(dateStr) {
+  const [yyyy, mm, dd] = dateStr.split('-').map(Number);
+  const d = new Date(yyyy, mm - 1, dd);
+  const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  return `${mm}月${dd}日 ${weekdays[d.getDay()]}`;
+}
 
 export function AppProvider({ children }) {
   const [cuisines, setCuisines] = useState(INITIAL_CUISINES);
   const [dishes, setDishes] = useState(INITIAL_DISHES);
   const [loaded, setLoaded] = useState(false);
   const [orders, setOrders] = useState([]); // 今日已点菜品
+  const [orderHistory, setOrderHistory] = useState({}); // { 'YYYY-MM-DD': { date, dateLabel, dishes[] } }
 
   // 启动时从 AsyncStorage 读取用户新增的数据，合并到初始数据
   useEffect(() => {
@@ -35,6 +51,30 @@ export function AppProvider({ children }) {
             return [...prev, ...extra.filter(d => !ids.has(d.id))];
           });
         }
+
+        // 加载历史记录 + 今日菜单
+        const savedHistory = await AsyncStorage.getItem(STORAGE_KEY_HISTORY);
+        const savedOrders  = await AsyncStorage.getItem(STORAGE_KEY_CURRENT_ORDERS);
+        const savedDate    = await AsyncStorage.getItem(STORAGE_KEY_ORDER_DATE);
+
+        const historyMap    = savedHistory ? JSON.parse(savedHistory) : {};
+        let   currentOrders = savedOrders  ? JSON.parse(savedOrders)  : [];
+        const storedDate    = savedDate || null;
+
+        // 跨日自动归档：上次记录日期不是今天，且有菜单数据
+        if (storedDate && storedDate !== getTodayStr() && currentOrders.length > 0) {
+          historyMap[storedDate] = {
+            date: storedDate,
+            dateLabel: getDateLabel(storedDate),
+            dishes: currentOrders,
+          };
+          await AsyncStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(historyMap));
+          await AsyncStorage.multiRemove([STORAGE_KEY_CURRENT_ORDERS, STORAGE_KEY_ORDER_DATE]);
+          currentOrders = [];
+        }
+
+        setOrderHistory(historyMap);
+        setOrders(currentOrders);
       } catch (e) {
         console.warn('加载数据失败', e);
       } finally {
@@ -43,6 +83,15 @@ export function AppProvider({ children }) {
     }
     loadData();
   }, []);
+
+  // 持久化今日菜单到 AsyncStorage
+  useEffect(() => {
+    if (!loaded) return;
+    AsyncStorage.setItem(STORAGE_KEY_CURRENT_ORDERS, JSON.stringify(orders)).catch(() => {});
+    if (orders.length > 0) {
+      AsyncStorage.setItem(STORAGE_KEY_ORDER_DATE, getTodayStr()).catch(() => {});
+    }
+  }, [orders, loaded]);
 
   // 加入今日菜单（去重）
   function addToOrder(dish) {
@@ -60,6 +109,13 @@ export function AppProvider({ children }) {
   // 清空今日菜单
   function clearOrders() {
     setOrders([]);
+    AsyncStorage.multiRemove([STORAGE_KEY_CURRENT_ORDERS, STORAGE_KEY_ORDER_DATE]).catch(() => {});
+  }
+
+  // 清空历史记录
+  async function clearHistory() {
+    setOrderHistory({});
+    await AsyncStorage.removeItem(STORAGE_KEY_HISTORY).catch(() => {});
   }
 
   // 新增菜系
@@ -121,9 +177,13 @@ export function AppProvider({ children }) {
     return hash;
   }
 
+  const sortedOrderHistory = Object.values(orderHistory).sort((a, b) =>
+    b.date.localeCompare(a.date)
+  );
+
   return (
     <AppContext.Provider
-      value={{ cuisines, dishes, loaded, orders, addToOrder, removeFromOrder, clearOrders, addCuisine, addDish, getDishesByCuisine, getDailyRecommended }}
+      value={{ cuisines, dishes, loaded, orders, addToOrder, removeFromOrder, clearOrders, addCuisine, addDish, getDishesByCuisine, getDailyRecommended, orderHistory: sortedOrderHistory, clearHistory }}
     >
       {children}
     </AppContext.Provider>

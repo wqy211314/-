@@ -11,6 +11,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import MenuScreen from './src/screens/MenuScreen';
 import DishDetailScreen from './src/screens/DishDetailScreen';
 import AddScreen from './src/screens/AddScreen';
+import HistoryScreen from './src/screens/HistoryScreen';
 import { COLORS } from './src/theme';
 
 const Tab = createBottomTabNavigator();
@@ -38,8 +39,8 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
-          const icons = { Home: '🏠', Menu: '📋', Add: '➕' };
-          const focusedIcons = { Home: '🏡', Menu: '📖', Add: '✏️' };
+          const icons = { Home: '🏠', Menu: '📋', Add: '➕', History: '📅' };
+          const focusedIcons = { Home: '🏡', Menu: '📖', Add: '✏️', History: '📆' };
           const icon = focused ? focusedIcons[route.name] : icons[route.name];
           return <Text style={{ fontSize: size - 4 }}>{icon}</Text>;
         },
@@ -58,6 +59,7 @@ function MainTabs() {
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: '首页' }} />
       <Tab.Screen name="Menu" component={MenuStack} options={{ title: '菜单' }} />
       <Tab.Screen name="Add" component={AddScreen} options={{ title: '新增' }} />
+      <Tab.Screen name="History" component={HistoryScreen} options={{ title: '历史' }} />
     </Tab.Navigator>
   );
 }
