@@ -877,7 +877,6 @@ export const YUECAI_DISHES = [
     ],
     tags: ['粥', '养生', '甜品', '粤式'],
   },
-,
   {
     id: 'c2_51',
     cuisineId: 'c2',

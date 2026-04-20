@@ -876,7 +876,6 @@ export const XIANGCAI_DISHES = [
     ],
     tags: ['排骨', '糯米', '蒸', '软糯'],
   },
-,
   {
     id: 'c3_51',
     cuisineId: 'c3',

@@ -853,7 +853,6 @@ export const JIACHANG_DISHES = [
     ],
     tags: ['粥', '小米', '养胃', '早餐'],
   },
-,
   {
     id: 'c4_51',
     cuisineId: 'c4',
