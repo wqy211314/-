@@ -890,7 +890,6 @@ export const CHUANCAI_DISHES = [
     ],
     tags: ['主食', '馄饨', '清汤', '成都'],
   },
-,
   // ─── 川菜 51-100 ──────────────────────────────────────────
   { id:'c1_51',cuisineId:'c1',name:'棒棒鸡',emoji:'🍗',description:'手撕鸡丝淋麻辣芝麻酱，香浓下饭',difficulty:'简单',time:'30分钟',servings:'2人份',
     ingredients:[{name:'鸡胸肉',amount:'300g'},{name:'芝麻酱',amount:'2汤匙'},{name:'红油',amount:'1汤匙'},{name:'生抽',amount:'1汤匙'},{name:'醋',amount:'1茶匙'},{name:'花椒粉',amount:'少许'},{name:'蒜末',amount:'2瓣'},{name:'葱丝',amount:'适量'},{name:'熟芝麻',amount:'适量'}],
