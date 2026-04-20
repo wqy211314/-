@@ -47,7 +47,7 @@ function CuisineCard({ cuisine, count, onPress }) {
 
 export default function HomeScreen() {
   const navigation = useNavigation();
-  const { cuisines, getDailyRecommended, getDishesByCuisine, orders, removeFromOrder, clearOrders } = useApp();
+  const { cuisines, getDailyRecommended, getDishesByCuisine, orders, removeFromOrder, clearOrders, confirmOrders } = useApp();
   const recommended = getDailyRecommended();
 
   const today = new Date();
@@ -125,6 +125,22 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               </View>
             ))}
+
+            {/* 确认今日菜单按钮 */}
+            <TouchableOpacity
+              style={styles.confirmBtn}
+              onPress={() =>
+                Alert.alert('确认今日菜单', `共 ${orders.length} 道，确认后将保存到历史记录。`, [
+                  { text: '取消', style: 'cancel' },
+                  { text: '确认', onPress: () => {
+                    confirmOrders();
+                    Alert.alert('已保存', '今日菜单已记录到历史 ✅');
+                  }},
+                ])
+              }
+            >
+              <Text style={styles.confirmBtnText}>✅ 确认今日菜单</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -300,4 +316,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFE8E8',
   },
   clearBtnText: { fontSize: 12, color: '#E74C3C', fontWeight: '600' },
+  confirmBtn: {
+    marginHorizontal: 20,
+    marginTop: 10,
+    marginBottom: 4,
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  confirmBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });

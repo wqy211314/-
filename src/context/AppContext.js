@@ -112,10 +112,26 @@ export function AppProvider({ children }) {
     AsyncStorage.multiRemove([STORAGE_KEY_CURRENT_ORDERS, STORAGE_KEY_ORDER_DATE]).catch(() => {});
   }
 
-  // 清空历史记录
-  async function clearHistory() {
-    setOrderHistory({});
-    await AsyncStorage.removeItem(STORAGE_KEY_HISTORY).catch(() => {});
+  // 确认今日菜单 → 存入历史
+  async function confirmOrders() {
+    if (orders.length === 0) return;
+    const today = getTodayStr();
+    const newEntry = {
+      date: today,
+      dateLabel: getDateLabel(today),
+      dishes: [...orders],
+    };
+    const newMap = { ...orderHistory, [today]: newEntry };
+    setOrderHistory(newMap);
+    await AsyncStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(newMap)).catch(() => {});
+  }
+
+  // 删除指定日期的历史条目
+  async function deleteHistoryEntry(date) {
+    const newMap = { ...orderHistory };
+    delete newMap[date];
+    setOrderHistory(newMap);
+    await AsyncStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(newMap)).catch(() => {});
   }
 
   // 新增菜系
@@ -183,7 +199,7 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider
-      value={{ cuisines, dishes, loaded, orders, addToOrder, removeFromOrder, clearOrders, addCuisine, addDish, getDishesByCuisine, getDailyRecommended, orderHistory: sortedOrderHistory, clearHistory }}
+      value={{ cuisines, dishes, loaded, orders, addToOrder, removeFromOrder, clearOrders, addCuisine, addDish, getDishesByCuisine, getDailyRecommended, orderHistory: sortedOrderHistory, confirmOrders, deleteHistoryEntry }}
     >
       {children}
     </AppContext.Provider>

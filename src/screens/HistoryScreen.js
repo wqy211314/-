@@ -7,6 +7,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../context/AppContext';
 import { COLORS, DIFFICULTY_COLOR } from '../theme';
 
+function getTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// 只有今日且未到晚上8点才可删除
+function canDelete(dateStr) {
+  if (dateStr !== getTodayStr()) return false;
+  return new Date().getHours() < 20;
+}
+
 function DishRow({ dish }) {
   return (
     <View style={styles.dishRow}>
@@ -22,12 +33,26 @@ function DishRow({ dish }) {
   );
 }
 
-function HistoryEntry({ entry }) {
+function HistoryEntry({ entry, onDelete }) {
+  const deletable = canDelete(entry.date);
+
+  function handleDelete() {
+    Alert.alert('删除记录', `确定删除「${entry.dateLabel}」的菜单记录？`, [
+      { text: '取消', style: 'cancel' },
+      { text: '删除', style: 'destructive', onPress: () => onDelete(entry.date) },
+    ]);
+  }
+
   return (
     <View style={styles.entryCard}>
       <View style={styles.dateHeader}>
         <Text style={styles.dateLabel}>{entry.dateLabel}</Text>
         <Text style={styles.dishCount}>{entry.dishes.length} 道</Text>
+        {deletable && (
+          <TouchableOpacity onPress={handleDelete} style={styles.deleteBtn}>
+            <Text style={styles.deleteBtnText}>删除</Text>
+          </TouchableOpacity>
+        )}
       </View>
       {entry.dishes.map((dish, idx) => (
         <DishRow key={dish.id ?? idx} dish={dish} />
@@ -37,16 +62,9 @@ function HistoryEntry({ entry }) {
 }
 
 export default function HistoryScreen() {
-  const { orderHistory, clearHistory } = useApp();
+  const { orderHistory, deleteHistoryEntry } = useApp();
 
   const totalDishes = orderHistory.reduce((sum, e) => sum + e.dishes.length, 0);
-
-  function handleClearHistory() {
-    Alert.alert('清空历史', '确定清空所有历史记录？', [
-      { text: '取消', style: 'cancel' },
-      { text: '清空', style: 'destructive', onPress: clearHistory },
-    ]);
-  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -56,17 +74,14 @@ export default function HistoryScreen() {
         {totalDishes > 0 && (
           <Text style={styles.headerSub}>共 {totalDishes} 道</Text>
         )}
-        {orderHistory.length > 0 && (
-          <TouchableOpacity onPress={handleClearHistory} style={styles.clearBtn}>
-            <Text style={styles.clearBtnText}>清空</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       <FlatList
         data={orderHistory}
         keyExtractor={item => item.date}
-        renderItem={({ item }) => <HistoryEntry entry={item} />}
+        renderItem={({ item }) => (
+          <HistoryEntry entry={item} onDelete={deleteHistoryEntry} />
+        )}
         contentContainerStyle={[
           styles.listContent,
           orderHistory.length === 0 && styles.emptyContainer,
@@ -76,7 +91,7 @@ export default function HistoryScreen() {
           <View style={styles.emptyInner}>
             <Text style={styles.emptyIcon}>📭</Text>
             <Text style={styles.emptyText}>暂无历史记录</Text>
-            <Text style={styles.emptyHint}>加入今日菜单，隔日自动归档</Text>
+            <Text style={styles.emptyHint}>在首页确认今日菜单后自动归档</Text>
           </View>
         }
       />
@@ -103,18 +118,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textSecondary,
     marginLeft: 8,
-  },
-  clearBtn: {
-    marginLeft: 'auto',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: '#FFE8E8',
-  },
-  clearBtnText: {
-    fontSize: 12,
-    color: '#E74C3C',
-    fontWeight: '600',
   },
 
   listContent: { paddingHorizontal: 16, paddingBottom: 24 },
@@ -161,6 +164,18 @@ const styles = StyleSheet.create({
   dishCount: {
     fontSize: 12,
     color: COLORS.textSecondary,
+    marginRight: 8,
+  },
+  deleteBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: '#FFE8E8',
+  },
+  deleteBtnText: {
+    fontSize: 12,
+    color: '#E74C3C',
+    fontWeight: '600',
   },
 
   dishRow: {
